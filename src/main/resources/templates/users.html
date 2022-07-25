@@ -6,8 +6,11 @@
     <title>Users</title>
 </head>
 <body>
-<div>
-    <table  class="table" border="1">
+<div th:switch="${users}">
+    <h2 th:case="null">No users found!</h2>
+    <div th:case="*">
+    <table class="table">
+        <thead>
         <tr>
             <th>Id</th>
             <th>First Name</th>
@@ -15,6 +18,8 @@
             <th>Address</th>
             <th>Action</th>
         </tr>
+        </thead>
+        <tbody>
         <tr th:each="user:${users}">
             <td th:text="${user.getId()}">1</td>
             <td th:text="${user.getFirstName()}">2</td>
@@ -25,7 +30,9 @@
                 <a href="#" th:href="@{user-delete/{id}(id=${user.getId()})}">delete</a>
             </td>
         </tr>
+        </tbody>
     </table>
+</div>
     <table>
         <td>
             <a href="/user-create">Create user</a>
