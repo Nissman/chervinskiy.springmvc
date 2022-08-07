@@ -1,35 +1,97 @@
 package web.service;
 
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import web.model.Role;
 import web.model.User;
+import web.repository.RoleRepository;
 import web.repository.UserRepository;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImp implements UserService {
 
     private final UserRepository userRepository;
 
+    private final RoleRepository roleRepository;
+
+
     @Autowired
-    public UserServiceImp(UserRepository userRepository) {
+    public UserServiceImp(UserRepository userRepository, RoleRepository repository) {
         this.userRepository = userRepository;
+        this.roleRepository = repository;
+        defaultInsert();
+    }
+
+    private void defaultInsert() {
+        roleRepository.save(new Role("ROLE_ADMIN"));
+        roleRepository.save(new Role("ROLE_USER"));
+        User user = new User();
+        user.setFirstName("first");
+        user.setLastName("last");
+        user.setAddress("address");
+        user.setUsername("admin");
+        user.setPassword(new BCryptPasswordEncoder().encode("100"));
+        user.setRoles(roleRepository.findById(1L).stream().toList());
+        userRepository.save(user);
+        user = new User();
+        user.setFirstName("first");
+        user.setLastName("last");
+        user.setAddress("address");
+        user.setUsername("user");
+        user.setPassword(new BCryptPasswordEncoder().encode("100"));
+        user.setRoles(roleRepository.findById(2L).stream().toList());
+        userRepository.save(user);
     }
 
     @Override
-    public User save(User user) {
-        return userRepository.save(user);
+    public boolean save(User user) {
+        if (userRepository.findByUsername(user.getUsername()) != null) {
+            return false;
+        }
+        checkRole(user);
+        user.setPassword(new BCryptPasswordEncoder().encode(user.getPassword()));
+        userRepository.save(user);
+        return true;
     }
 
     @Override
-    public void deleteById(Long id) {
-        userRepository.deleteById(id);
+    public boolean deleteById(Long id) {
+        if (userRepository.findById(id).isPresent()) {
+            userRepository.deleteById(id);
+            return true;
+        }
+        return false;
     }
 
     @Override
     public void edit(User user) {
-        userRepository.save(user);
+        List<User> users = userRepository.findAllByUsername(user.getUsername());
+        if (users.size() == 1 && users.get(0).getId() == user.getId()) {
+            checkRole(user);
+            if (!userRepository.findById(user.getId()).get().getPassword().equals(user.getPassword())) {
+                user.setPassword(new BCryptPasswordEncoder().encode(user.getPassword()));
+            }
+            userRepository.save(user);
+        }
+    }
+
+    private void checkRole(User user) {
+        Collection<Role> roles = user.getRoles();
+        if (roles.size() == 0 || roles.stream().allMatch(Objects::isNull)) {
+            user.setRoles(roleRepository.findById(2L).stream().toList());
+        }
     }
 
     @Override
@@ -39,6 +101,27 @@ public class UserServiceImp implements UserService {
 
     @Override
     public User findByID(Long id) {
-        return userRepository.getReferenceById(id);
+        return userRepository.findById(id).orElse(null);
+        // .getReferenceById(id);
+    }
+
+    @Override
+    public User findByUsername(String username) {
+        return userRepository.findByUsername(username);
+    }
+
+    @Override
+    @Transactional
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        User user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new UsernameNotFoundException(String.format("User '%s' not found", username));
+        }
+        return new org.springframework.security.core.userdetails.User(user.getUsername(),
+                user.getPassword(), mapRolesToAuthorities(user.getRoles()));
+    }
+
+    private Collection<? extends GrantedAuthority> mapRolesToAuthorities(Collection<Role> roles) {
+        return roles.stream().map(role -> new SimpleGrantedAuthority(role.getName())).collect(Collectors.toList());
     }
 }
