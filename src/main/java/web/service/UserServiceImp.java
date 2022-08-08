@@ -43,7 +43,7 @@ public class UserServiceImp implements UserService {
         user.setAddress("address");
         user.setUsername("admin");
         user.setPassword(new BCryptPasswordEncoder().encode("100"));
-        user.setRoles(roleRepository.findById(1L).stream().toList());
+        user.setRoles(roleRepository.findById(1L).stream().collect(Collectors.toSet()));
         userRepository.save(user);
         user = new User();
         user.setFirstName("first");
@@ -51,7 +51,7 @@ public class UserServiceImp implements UserService {
         user.setAddress("address");
         user.setUsername("user");
         user.setPassword(new BCryptPasswordEncoder().encode("100"));
-        user.setRoles(roleRepository.findById(2L).stream().toList());
+        user.setRoles(roleRepository.findById(2L).stream().collect(Collectors.toSet()));
         userRepository.save(user);
     }
 
@@ -90,7 +90,7 @@ public class UserServiceImp implements UserService {
     private void checkRole(User user) {
         Collection<Role> roles = user.getRoles();
         if (roles.size() == 0 || roles.stream().allMatch(Objects::isNull)) {
-            user.setRoles(roleRepository.findById(2L).stream().toList());
+            user.setRoles(roleRepository.findById(2L).stream().collect(Collectors.toSet()));
         }
     }
 
@@ -111,17 +111,11 @@ public class UserServiceImp implements UserService {
     }
 
     @Override
-    @Transactional
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByUsername(username);
         if (user == null) {
             throw new UsernameNotFoundException(String.format("User '%s' not found", username));
         }
-        return new org.springframework.security.core.userdetails.User(user.getUsername(),
-                user.getPassword(), mapRolesToAuthorities(user.getRoles()));
-    }
-
-    private Collection<? extends GrantedAuthority> mapRolesToAuthorities(Collection<Role> roles) {
-        return roles.stream().map(role -> new SimpleGrantedAuthority(role.getName())).collect(Collectors.toList());
+        return user;
     }
 }

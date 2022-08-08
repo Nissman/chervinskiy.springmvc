@@ -1,5 +1,7 @@
 package web.model;
 
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -7,6 +9,8 @@ import javax.persistence.*;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Size;
 import java.util.Collection;
+import java.util.Objects;
+import java.util.Set;
 
 @Entity
 @Table(name = "users")
@@ -39,12 +43,13 @@ public class User implements UserDetails {
     @NotEmpty(message = "{EmptyField}")
     private String address;
 
-    @ManyToMany
+    @ManyToMany//(fetch = FetchType.LAZY)
+    //@Fetch(FetchMode.JOIN)
     @JoinTable(name = "users_roles",
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id"))
     @NotEmpty(message = "{EmptyField}")
-    private Collection<Role> roles;
+    private Set<Role> roles;
 
     public User() {
 
@@ -96,11 +101,11 @@ public class User implements UserDetails {
         return this.getRoles();
     }
 
-    public Collection<Role> getRoles() {
+    public Set<Role> getRoles() {
         return roles;
     }
 
-    public void setRoles(Collection<Role> roles) {
+    public void setRoles(Set<Role> roles) {
         this.roles = roles;
     }
 
@@ -139,5 +144,23 @@ public class User implements UserDetails {
     @Override
     public boolean isEnabled() {
         return true;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        User user = (User) o;
+        return firstName.equals(user.firstName) &&
+                Objects.equals(lastName, user.lastName) && Objects.equals(address, user.address);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = 1;
+        result = 31 * result + ((firstName == null) ? 0 : firstName.hashCode());
+        result = 31 * result + ((lastName == null) ? 0 : lastName.hashCode());
+        result = 31 * result + ((address == null) ? 0 : address.hashCode());
+        return result;
     }
 }
