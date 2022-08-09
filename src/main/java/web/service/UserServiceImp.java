@@ -38,18 +38,18 @@ public class UserServiceImp implements UserService {
         roleRepository.save(new Role("ROLE_ADMIN"));
         roleRepository.save(new Role("ROLE_USER"));
         User user = new User();
-        user.setFirstName("first");
-        user.setLastName("last");
-        user.setAddress("address");
-        user.setUsername("admin");
+        user.setFirstName("admin");
+        user.setLastName("admin");
+        user.setAge(230);
+        user.setUsername("admin@mail.ru");
         user.setPassword(new BCryptPasswordEncoder().encode("100"));
         user.setRoles(roleRepository.findById(1L).stream().collect(Collectors.toSet()));
         userRepository.save(user);
         user = new User();
-        user.setFirstName("first");
-        user.setLastName("last");
-        user.setAddress("address");
-        user.setUsername("user");
+        user.setFirstName("user");
+        user.setLastName("user");
+        user.setAge(25);
+        user.setUsername("user@mail.ru");
         user.setPassword(new BCryptPasswordEncoder().encode("100"));
         user.setRoles(roleRepository.findById(2L).stream().collect(Collectors.toSet()));
         userRepository.save(user);
@@ -78,7 +78,7 @@ public class UserServiceImp implements UserService {
     @Override
     public void edit(User user) {
         List<User> users = userRepository.findAllByUsername(user.getUsername());
-        if (users.size() == 1 && users.get(0).getId() == user.getId()) {
+        if (users.size() == 0 || users.size() == 1 && users.get(0).getId() == user.getId()) {
             checkRole(user);
             if (!userRepository.findById(user.getId()).get().getPassword().equals(user.getPassword())) {
                 user.setPassword(new BCryptPasswordEncoder().encode(user.getPassword()));

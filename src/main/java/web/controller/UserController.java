@@ -2,7 +2,6 @@ package web.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
@@ -24,18 +23,17 @@ public class UserController {
 
     @GetMapping(value = "/")
     public String redirectIndex() {
-        return "redirect:index";
+        return "redirect:login";
     }
 
-    @GetMapping(value = "/index")
-    public String indexPage() {
-        return "index";
+    @GetMapping("/login")
+    public String login() {
+        return "login";
     }
 
     @GetMapping(value = "/user")
-    public String userInfoForm(ModelMap model, @AuthenticationPrincipal UserDetails currentUser) {
-        User user = (User) userService.findByUsername(currentUser.getUsername());
+    public String userInfoForm(ModelMap model, @AuthenticationPrincipal User user) {
         model.addAttribute("user", user);
-        return "user";
+        return "userPage";
     }
 }

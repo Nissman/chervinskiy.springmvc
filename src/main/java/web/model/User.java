@@ -8,9 +8,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import javax.persistence.*;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Size;
-import java.util.Collection;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "users")
@@ -20,7 +19,18 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
-    @Column(name = "username")
+
+    @Column(name = "first_name", nullable = false, length = 5)
+    @Size(min = 1, max = 5, message = "minimal length '1' and maximum '5' symbols")
+    private String firstName;
+
+    @Column(name = "last_name", length = 45)
+    private String lastName;
+
+    @Column(name = "age")
+    private int age;
+
+    @Column(name = "email")
     @NotEmpty(message = "{EmptyField}")
     @Size(min = 2, message = "minimal length '2' symbols")
     private String username;
@@ -32,16 +42,6 @@ public class User implements UserDetails {
 
     @Transient
     private String passwordConfirm;
-    @Column(name = "first_name", nullable = false, length = 5)
-    @Size(min = 1, max = 5, message = "minimal length '1' and maximum '5' symbols")
-    private String firstName;
-
-    @Column(name = "last_name", length = 45)
-    private String lastName;
-
-    @Column(name = "address", nullable = false)
-    @NotEmpty(message = "{EmptyField}")
-    private String address;
 
     @ManyToMany//(fetch = FetchType.LAZY)
     //@Fetch(FetchMode.JOIN)
@@ -49,7 +49,7 @@ public class User implements UserDetails {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id"))
     @NotEmpty(message = "{EmptyField}")
-    private Set<Role> roles;
+    private Set<Role> roles = new HashSet<>();
 
     public User() {
 
@@ -88,12 +88,12 @@ public class User implements UserDetails {
         this.lastName = lastName;
     }
 
-    public String getAddress() {
-        return address;
+    public int getAge() {
+        return age;
     }
 
-    public void setAddress(String address) {
-        this.address = address;
+    public void setAge(int age) {
+        this.age = age;
     }
 
     @Override
@@ -101,8 +101,8 @@ public class User implements UserDetails {
         return this.getRoles();
     }
 
-    public Set<Role> getRoles() {
-        return roles;
+    public List<Role> getRoles() {
+        return roles.stream().sorted(Comparator.comparing(Role::getId)).collect(Collectors.toList());
     }
 
     public void setRoles(Set<Role> roles) {
@@ -152,7 +152,7 @@ public class User implements UserDetails {
         if (o == null || getClass() != o.getClass()) return false;
         User user = (User) o;
         return firstName.equals(user.firstName) &&
-                Objects.equals(lastName, user.lastName) && Objects.equals(address, user.address);
+                Objects.equals(lastName, user.lastName) && Objects.equals(age, user.age);
     }
 
     @Override
@@ -160,7 +160,7 @@ public class User implements UserDetails {
         int result = 1;
         result = 31 * result + ((firstName == null) ? 0 : firstName.hashCode());
         result = 31 * result + ((lastName == null) ? 0 : lastName.hashCode());
-        result = 31 * result + ((address == null) ? 0 : address.hashCode());
+        result = 31 * result + Integer.hashCode(age);
         return result;
     }
 }
